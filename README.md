@@ -81,11 +81,14 @@ If pipeline was to be deployed on cloud infrastructure, would review following:
 * Review deployment plan including CI/CD workflows and infrastructure configuration using Terraform/CloudFormation
 
 ### Instructions to the evaluator
-
 * Per project instructions, assume Docker Compose has been installed
-  * Changes were made to default `docker-compose.yaml` to hide demo DAGs and set Airflow Postgres as default for `PostgresOperator`
-
-* Generate developer API key for OpenWeatherMap API and update `OPEN_WEATHER_API_KEY` in `dags/pipeline/config.py`
+  * Some changes were made to default `docker-compose.yaml`
+    * set to use `LocalExecutor` instead of `CeleryExecutor` 
+      * for faster local iteration and removed unnessary components (redis, flower)
+    * set Airflow Postgres as default for `PostgresOperator`
+    * hide demo DAGs
+* Generate developer API key for OpenWeatherMap API
+  * update `OPEN_WEATHER_API_KEY` in `dags/pipeline/config.py`
 * Run `make init` to initialize  project via docker compose
 * Run `make start` to start project
 * Enable `fetcher` and `transformer` DAGs via Airflow UI to start data pipelines
