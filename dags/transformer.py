@@ -1,44 +1,79 @@
 from datetime import datetime, timedelta
 
-# The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
-
-# Operators; we need this to operate!
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-# These args will get passed on to each operator
-# You can override them on a per-task basis during operator initialization
 default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'email': ['airflow@example.com'],
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    "owner": "airflow",
+    "depends_on_past": False,
+    "email": ["airflow@example.com"],
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
 }
+
 with DAG(
-        'transformer',
-        default_args=default_args,
-        description='To transform the raw current weather to a modeled dataset',
-        schedule_interval=timedelta(minutes=5),
-        start_date=datetime(2021, 1, 1),
-        catchup=False,
-        tags=['take-home'],
+    "transformer",
+    default_args=default_args,
+    description="To transform the raw current weather to a modeled dataset",
+    schedule_interval=timedelta(minutes=30),
+    start_date=datetime(2021, 1, 1),
+    catchup=False,
+    tags=["take-home"],
 ) as dag:
 
-    # @TODO: Fill in the below
-    t1 = PostgresOperator(
-        task_id="create_modeled_dataset_table",
-        sql="""
-            CREATE TABLE IF NOT EXISTS current_weather (
-           );
-          """,
+    create_modeled_tables = PostgresOperator(
+        task_id="create_modeled_tables",
+        sql=[
+            "sql/create/dim_dates.sql",
+            "sql/create/dim_conditions.sql",
+            "sql/create/dim_locations.sql",
+            "sql/create/fact_weather.sql",
+            "sql/create/obt_current_weather.sql",
+        ],
     )
 
-    # @TODO: Fill in the below
-    t2 = PostgresOperator(
-        task_id="transform_raw_into_modelled",
-        sql="""
-            SELECT * FROM raw_current_weather ...
-          """,
+    transform_dim_dates = PostgresOperator(
+        task_id="transform_dim_dates",
+        sql=["TRUNCATE TABLE dim_dates CASCADE", "sql/transform/load_dim_dates.sql"],
     )
-    t1 >> t2
+
+    transform_dim_conditions = PostgresOperator(
+        task_id="transform_dim_conditions",
+        sql=[
+            "TRUNCATE TABLE dim_conditions CASCADE",
+            "sql/transform/load_dim_conditions.sql",
+        ],
+    )
+
+    transform_dim_locations = PostgresOperator(
+        task_id="transform_dim_locations",
+        sql=[
+            "TRUNCATE TABLE dim_locations CASCADE",
+            "sql/transform/load_dim_locations.sql",
+        ],
+    )
+
+    transform_fact_weather = PostgresOperator(
+        task_id="transform_fact_weather",
+        sql=["TRUNCATE TABLE fact_weather", "sql/transform/load_fact_weather.sql"],
+    )
+
+    transform_obt_current_weather = PostgresOperator(
+        task_id="transform_obt_current_weather",
+        sql=[
+            "TRUNCATE TABLE obt_current_weather",
+            "sql/transform/load_obt_current_weather.sql",
+        ],
+    )
+
+    # need to load dimension tables before fact table due to FK dependencies
+    (
+        create_modeled_tables
+        >> [
+            transform_dim_dates,
+            transform_dim_conditions,
+            transform_dim_locations,
+        ]
+        >> transform_fact_weather
+        >> transform_obt_current_weather
+    )
