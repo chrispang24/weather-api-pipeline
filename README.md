@@ -1,10 +1,6 @@
-# Bungalow Take Home Project for Data Engineer Role (V2. 2021-11-02)
+# OpenWeatherMap API Data Pipeline
 
-### Time spent
-
-This project was worked upon over the course of a day intermixed with other external projects. There was some time spent on review of the OpenWeatherMap API documentation as well as the "Running Airflow in Docker" quick start to identify some configuration changes from the default.
-
-### Assumptions
+### Project assumptions
 
 Assumed only primary weather condition was relevant for stakeholders. The OpenWeatherMap API docs states that "it is possible to meet more than one weather condition for a requested location. The first weather condition in API respond is primary".
   * If additional conditions required, would consider concatenating conditions or modifying ingestion to support multiple conditions.
@@ -80,8 +76,8 @@ If pipeline was to be deployed on cloud infrastructure, would review following:
 * Move project configuration to a parameter or secrets store
 * Review deployment plan including CI/CD workflows and infrastructure configuration using Terraform/CloudFormation
 
-### Instructions to the evaluator
-* Per project instructions, assume Docker Compose has been installed
+### Usage Instructions
+* Assume Docker Compose has been installed
   * Some changes were made to default `docker-compose.yaml`
     * set to use `LocalExecutor` instead of `CeleryExecutor` 
       * for faster local iteration and removed unnessary components (redis, flower)
